@@ -30,7 +30,7 @@ impl Es {
         }
     }
 
-    pub(crate) async fn search(&self, index: &str, batch_size: usize) -> Result<Value, Box<dyn std::error::Error>> {
+    pub(crate) async fn search(&self, index: &str, batch_size: usize) -> Result<(String, Vec<Value>, u64), Box<dyn std::error::Error>> {
         let response = self.client
             .search(SearchParts::Index(&[&index]))
             .scroll(SCROLL_DURATION)
@@ -45,10 +45,27 @@ impl Es {
             .await?;
 
         let response_body = response.json::<Value>().await?;
-        Ok(response_body)
+        
+        Self::extract_search_result(response_body)
+    }
+    
+    pub(crate) async fn scroll_with_retry(&self, scroll_id: String, max_retries: i32) -> Result<(String, Vec<Value>, u64), Box<dyn std::error::Error>> {
+        let mut retries = max_retries;
+        loop {
+            match self.scroll(scroll_id.clone()).await {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    if retries == 0 {
+                        return Err(e);
+                    }
+                    println!("Retrying scroll due to error: {}", e);
+                    retries -= 1;
+                }
+            }
+        }
     }
 
-    pub(crate) async fn scroll(&self, scroll_id: String) -> Result<Value, Box<dyn std::error::Error>> {
+    pub(crate) async fn scroll(&self, scroll_id: String) -> Result<(String, Vec<Value>, u64), Box<dyn std::error::Error>> {
         let response = self.client
             .scroll(ScrollParts::ScrollId(&scroll_id))
             .scroll(SCROLL_DURATION)
@@ -56,7 +73,8 @@ impl Es {
             .await?;
 
         let response_body = response.json::<Value>().await?;
-        Ok(response_body)
+        
+        Self::extract_search_result(response_body)
     }
 
     pub(crate) async fn clear_scroll(&self, scroll_id: String) -> Result<(), Box<dyn std::error::Error>> {
@@ -73,17 +91,17 @@ impl Es {
             Err("Failed to clear scroll".into())
         }
     }
-
+    
     pub(crate) fn extract_search_result(response_body: Value) -> Result<(String, Vec<Value>, u64), Box<dyn std::error::Error>> {
         if response_body["error"].is_object() {
             println!("Error: {:?}", response_body["error"]);
             return Err("Error in response".into());
         }
-
+    
         let scroll_id = response_body["_scroll_id"].as_str().unwrap().to_string();
         let hits = response_body["hits"]["hits"].as_array().unwrap().to_vec();
         let total = response_body["hits"]["total"]["value"].as_u64().unwrap_or(0);
-
+    
         Ok((scroll_id, hits, total))
     }
 }

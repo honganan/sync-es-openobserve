@@ -9,6 +9,8 @@ use clap::Parser;
 struct Args {
     #[arg(long, required = false, default_value = "1000", env = "BATCH_SIZE")]
     batch_size: usize,
+    #[arg(long, required = false, default_value = "3", env = "MAX_RETRIES")]
+    max_retries: i32,
 
     #[arg(long, required = true, env = "ES_ADDR")]
     es_addr: String,
@@ -40,8 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let o2_client = o2::O2Client::new(args.clone());
 
     // Initial search
-    let response_body = es.search(&args.es_index.clone(), args.batch_size).await?;
-    let (mut scroll_id, mut hits, total) = es::Es::extract_search_result(response_body)?;
+    let (mut scroll_id, mut hits, total) = es.search(&args.es_index.clone(), args.batch_size).await?;
 
     println!("Found {} records to process...", total);
 
@@ -62,8 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Scroll next batch
-        let response_body = es.scroll(scroll_id).await?;
-        let (new_scroll_id, new_hits, _) = es::Es::extract_search_result(response_body)?;
+        let (new_scroll_id, new_hits, _) = es.scroll_with_retry(scroll_id, args.max_retries).await?;
         scroll_id = new_scroll_id;
         hits = new_hits;
     }

@@ -17,5 +17,6 @@ Required Environments:
 Optional Environments:
 
 - BATCH_SIZE
+- MAX_RETRIES
 
 
