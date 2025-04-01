@@ -19,6 +19,7 @@ impl Es {
         // 构建 TransportBuilder
         let builder = TransportBuilder::new(conn_pool)
             .auth(Credentials::Basic(args.es_user, args.es_pass))
+            .timeout(std::time::Duration::from_secs(10))
             .build()
             .unwrap();
 
@@ -33,6 +34,7 @@ impl Es {
         let response = self.client
             .search(SearchParts::Index(&[&index]))
             .scroll(SCROLL_DURATION)
+            .timeout("10s")
             .body(json!({
                 "query": {
                     "match_all": {}
