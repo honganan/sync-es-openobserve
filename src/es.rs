@@ -9,6 +9,8 @@ static SCROLL_DURATION: &str = "10m";
 
 pub(crate) struct Es {
     pub(crate) client: Elasticsearch,
+    index: String,
+    query: String,
 }
 
 impl Es {
@@ -27,20 +29,19 @@ impl Es {
 
         Es {
             client,
+            index: args.es_index,
+            query: args.query,
         }
     }
 
-    pub(crate) async fn search(&self, index: &str, batch_size: usize) -> Result<(String, Vec<Value>, u64), Box<dyn std::error::Error>> {
+    pub(crate) async fn search(&self, batch_size: usize) -> Result<(String, Vec<Value>, u64), Box<dyn std::error::Error>> {
+        let parsed_query: Value = serde_json::from_str(self.query.as_str())?;
         let response = self.client
-            .search(SearchParts::Index(&[&index]))
+            .search(SearchParts::Index(&[&self.index]))
             .scroll(SCROLL_DURATION)
             .timeout("10s")
-            .body(json!({
-                "query": {
-                    "match_all": {}
-                },
-                "size": batch_size,
-            }))
+            .size(batch_size as i64)
+            .body(parsed_query)
             .send()
             .await?;
 

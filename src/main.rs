@@ -11,6 +11,8 @@ struct Args {
     batch_size: usize,
     #[arg(long, required = false, default_value = "3", env = "MAX_RETRIES")]
     max_retries: i32,
+    #[arg(long, required = false, default_value = r#"{"query":{"match_all":{}}}"#, env = "ES_QUERY")]
+    query: String,
 
     #[arg(long, required = true, env = "ES_ADDR")]
     es_addr: String,
@@ -42,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let o2_client = o2::O2Client::new(args.clone());
 
     // Initial search
-    let (mut scroll_id, mut hits, total) = es.search(&args.es_index.clone(), args.batch_size).await?;
+    let (mut scroll_id, mut hits, total) = es.search(args.batch_size).await?;
 
     println!("Found {} records to process...", total);
 

@@ -1,22 +1,18 @@
 # sync-es-openobserve
 Sync ES to OpenObserve
 
-Required Environments:
-
-- O2_ADDR
-- O2_USER
-- O2_PASS
-- O2_ORG
-- O2_STREAM
-
-- ES_ADDR
-- ES_USER
-- ES_PASS
-- ES_INDEX
-
-Optional Environments:
-
-- BATCH_SIZE
-- MAX_RETRIES
-
+| Env        | Required | Default                                  | Example                                                                                                                                                                                                                                                                      |
+|------------|----------|------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| O2_ADDR    | Yes      |                                          | `http://localhost:5080`                                                                                                                                                                                                                                                      |
+| O2_USER    | Yes      |                                          | `admin`                                                                                                                                                                                                                                                                      |
+| O2_PASS    | Yes      |                                          | `******`                                                                                                                                                                                                                                                                     |
+| O2_ORG     | Yes      |                                          | `default`                                                                                                                                                                                                                                                                    |
+| O2_STREAM  | Yes      |                                          | `my_stream`                                                                                                                                                                                                                                                                  |
+| ES_ADDR    | Yes      |                                          | `http://localhost:9200`                                                                                                                                                                                                                                                      |
+| ES_USER    | Yes      |                                          | `elastic`                                                                                                                                                                                                                                                                    |
+| ES_PASS    | Yes      |                                          | `******`                                                                                                                                                                                                                                                                     |
+| ES_INDEX   | Yes      |                                          | `my_index`                                                                                                                                                                                                                                                                   |
+| BATCH_SIZE | No       | `1000`                                   | `500`                                                                                                                                                                                                                                                                        |
+| MAX_RETRIES| No       | `3`                                      | `5`                                                                                                                                                                                                                                                                          |
+| ES_QUERY   | No       | `{"query":{"match_all":{}}}`             | Custom queries can enable customized migration features, such as: Task splitting, Incremental migration, Resumable transfer. The following query ensures only data within the specified time range is migrated:<br/>`{"query":{"range":{"@timestamp":{"gte":"2025-04-01T00:00:00+08:00","lte":"2025-04-01T23:59:59+08:00","format":"strict_date_optional_time"}}}}` |
 
